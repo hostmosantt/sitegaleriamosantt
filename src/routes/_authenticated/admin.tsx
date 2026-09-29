@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { auth, storage as firebaseStorage } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { ref, uploadBytes } from "firebase/storage";
 import {
   getSiteContent,
   getIsAdmin,
@@ -83,7 +85,7 @@ function AdminPage() {
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    await signOut(auth);
     navigate({ to: "/auth", replace: true });
   }
 
@@ -91,8 +93,9 @@ function AdminPage() {
     setUploading(field);
     try {
       const path = `${field === "hero_image_url" ? "hero" : "tour"}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
-      const { error } = await supabase.storage.from("site-media").upload(path, file, { upsert: true });
-      if (error) throw error;
+      const storageRef = ref(firebaseStorage, `site-media/${path}`);
+      await uploadBytes(storageRef, file);
+      
       setForm((prev) => (prev ? { ...prev, [field]: `site-media/${path}` } : prev));
       toast.success("Arquivo enviado. Clique em salvar para publicar.");
     } catch (err) {

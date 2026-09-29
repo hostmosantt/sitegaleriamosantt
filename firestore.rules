@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar se o usuário está logado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Função auxiliar para verificar se o usuário é um administrador
+    // Checa se o UID do usuário existe na coleção 'admins'
+    function isAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Regras para as Configurações do Site
+    match /site_settings/{document} {
+      // Qualquer um pode ler as configurações do site
+      allow read: if true;
+      // Apenas administradores podem modificar
+      allow write: if isAdmin();
+    }
+
+    // Regras para as Salas
+    match /salas/{document} {
+      // Qualquer um pode ler a lista de salas
+      allow read: if true;
+      // Apenas administradores podem adicionar, editar ou deletar
+      allow write: if isAdmin();
+    }
+    
+    // Regras para a Coleção de Administradores
+    match /admins/{userId} {
+      // O usuário pode ler o próprio documento (útil para verificar painel)
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      // Apenas a interface de admin (via SDK Admin/Servidor) deve poder criar novos admins
+      allow write: if false; 
+    }
+    
+    // Bloqueia o acesso a qualquer outra coleção que não foi explicitamente declarada acima
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -55,18 +55,45 @@ const fallback: Omit<SiteSettings, "id" | "updated_at"> = {
   hero_image_url: "/assets/mosantt-hero.jpg",
   about_title: "Um novo conceito em Rio Branco",
   about_text:
-    "O Edifício Mosantt foi concebido para abrigar os melhores especialistas do Acre. Um ambiente que transcende o hospitalar, oferecendo uma experiência de galeria de arte aplicada ao cuidado pessoal.",
+    "A Galeria Mosantt é um espaço que reúne saúde, odontologia, estética e bem-estar em um ambiente sofisticado, acolhedor e pensado para proporcionar uma experiência diferenciada. Um conceito que conecta profissionais, serviços e pessoas em um só lugar, com cuidado, conforto e excelência em cada detalhe.",
   tour_title: "Uma visita guiada ao espaço.",
   tour_text:
     "Percorra o edifício e entenda como a Mosantt funciona: salas independentes, áreas comuns compartilhadas, recepção, estacionamento privativo e uma atmosfera pensada para acolher pacientes e profissionais.",
   tour_video_url: "/assets/mosantt-tour.mp4",
-  whatsapp_url: "https://wa.me/",
+  whatsapp_url: "https://wa.me/5568992302967",
   instagram_url: "https://instagram.com/mosantt",
-  address_line1: "Estrada Dias Martins, nº 1303",
-  address_line2: "Jardim de Alah, Rio Branco — AC",
+  address_line1: "Estr. Dias Martins, 1303",
+  address_line2: "Jardim de Alah, Rio Branco — AC, 69915-526",
   maps_url:
     "https://www.google.com/maps/search/?api=1&query=Estrada+Dias+Martins+1303+Jardim+de+Alah+Rio+Branco",
 };
+
+const fallbackSalas: Sala[] = [
+  {
+    id: "sala-3",
+    numero: "03",
+    status: "Ocupada",
+    ocupante: "Drª. Nayra Damasceno Sampaio",
+    especialidade: "RAVIVVARE",
+    nota: null,
+    instagram: null,
+    site: null,
+    whatsapp: null,
+    ordem: 1,
+  },
+  {
+    id: "sala-5",
+    numero: "05",
+    status: "Ocupada",
+    ocupante: "Dr. Alison Mota",
+    especialidade: "Studio ALS Odontologia Integrada",
+    nota: "Invisalign Doctor",
+    instagram: null,
+    site: null,
+    whatsapp: null,
+    ordem: 2,
+  }
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -103,7 +130,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const data = Route.useLoaderData();
   const s = { ...fallback, ...(data.settings ?? {}) };
-  const salas: Sala[] = data.salas;
+  const salas: Sala[] = data.salas?.length ? data.salas : fallbackSalas;
 
   return (
     <div className="overflow-x-clip bg-sand text-charcoal selection:bg-oak/30">
@@ -437,54 +464,87 @@ function Index() {
       </section>
 
       <footer id="localizacao" className="scroll-mt-4 bg-charcoal px-5 py-16 text-sand md:px-8 md:py-20">
-        <div className="max-w-7xl mx-auto">
-          <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-6 block">
-            Onde Estamos
-          </span>
-          <h3 className="font-serif text-3xl md:text-4xl mb-6 max-w-2xl">
-            {s.address_line1}
-            <br />
-            {s.address_line2}
-          </h3>
-          <p className="text-sand/50 font-light mb-12 max-w-md">
-            Um ponto estratégico de fácil acesso, com estacionamento privativo e segurança.
-          </p>
-          <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:gap-x-10 sm:gap-y-4">
-            <a
-              href={s.maps_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
-            >
-              Ver no Google Maps
-            </a>
-            <a
-              href={s.instagram_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
-            >
-              Instagram @mosantt
-            </a>
-            <a
-              href={s.whatsapp_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
-            >
-              WhatsApp
-            </a>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 gap-12 lg:grid-cols-[1.2fr_0.8fr] min-w-0">
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-6 block">
+              Onde Estamos
+            </span>
+            <h3 className="font-serif text-3xl md:text-4xl mb-6 max-w-2xl min-w-0 break-words">
+              {s.address_line1}
+              <br />
+              {s.address_line2}
+            </h3>
+            <p className="text-sand/50 font-light mb-12 max-w-md">
+              Um ponto estratégico de fácil acesso, com estacionamento privativo e segurança.
+            </p>
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-4 min-w-0">
+              <a
+                href={s.maps_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
+              >
+                Ver no Google Maps
+              </a>
+              <a
+                href={s.instagram_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
+              >
+                Instagram @mosantt
+              </a>
+              <a
+                href={s.whatsapp_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
+              >
+                WhatsApp
+              </a>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-8 min-w-0 lg:pl-12 lg:border-l lg:border-sand/10">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-3 block">
+                Horário de Funcionamento
+              </span>
+              <p className="text-sand/80 font-light text-sm leading-relaxed">
+                Segunda a sexta: 08:00 às 18:00<br />
+                Sábado: 08:00 às 12:00
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-3 block">
+                Contato Comercial
+              </span>
+              <p className="text-sand/80 font-light text-sm leading-relaxed">
+                WhatsApp / Tel: (68) 99230-2967
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-3 block">
+                Dados da Empresa
+              </span>
+              <p className="text-sand/50 font-light text-xs leading-relaxed">
+                Razão Social: J M M & A M RABELO LTDA<br />
+                CNPJ: 46.748.316/0001-67<br />
+                Mosantt Saúde e Estética
+              </p>
+            </div>
           </div>
         </div>
-        <div className="mx-auto mt-14 flex max-w-7xl flex-col items-center justify-between gap-6 border-t border-sand/10 pt-8 text-center md:mt-20 md:flex-row md:pt-10 md:text-left">
-          <a href="#top" className="block">
+
+        <div className="mx-auto mt-14 flex max-w-7xl flex-col items-center justify-between gap-6 border-t border-sand/10 pt-8 text-center min-w-0 md:mt-20 md:flex-row md:pt-10 md:text-left">
+          <a href="#top" className="block shrink-0">
             <img
               src={logoAsset.url}
               alt="Mosantt"
               className="h-8 w-auto brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
             />
           </a>
-          <p className="text-[10px] uppercase tracking-widest text-sand/30">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-sand/30 min-w-0">
             © {new Date().getFullYear()} Mosantt — Saúde e Estética.
           </p>
         </div>
