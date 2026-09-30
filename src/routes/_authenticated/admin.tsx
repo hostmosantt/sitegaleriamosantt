@@ -1,127 +1,185 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { auth, storage as firebaseStorage } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
-import { ref, uploadBytes } from "firebase/storage";
 import {
   getSiteContent,
   getIsAdmin,
   updateSala,
-  updateSiteSettings,
   type Sala,
-  type SiteSettings,
 } from "@/lib/site.functions";
+import {
+  LogOut,
+  Building2,
+  Save,
+  Globe
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
-
-type SettingsForm = Omit<SiteSettings, "id" | "updated_at">;
 
 function Field({
   label,
   value,
   onChange,
   textarea,
-}: {
+}: Readonly<{
   label: string;
   value: string;
   onChange: (v: string) => void;
   textarea?: boolean;
-}) {
+}>) {
   return (
-    <label className="block text-[10px] uppercase tracking-[0.2em] text-charcoal/60">
-      {label}
+    <div className="flex flex-col gap-1.5 w-full">
+      <label className="text-xs font-bold uppercase tracking-wider text-charcoal/70 flex items-center gap-2">
+        {label}
+      </label>
       {textarea ? (
         <textarea
           rows={4}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-2 w-full border border-charcoal/20 bg-white/60 px-4 py-3 text-sm normal-case tracking-normal text-charcoal outline-none focus:border-oak"
+          className="w-full rounded-xl border border-white/40 bg-white/50 backdrop-blur-sm px-4 py-3 text-sm text-charcoal outline-none transition-all focus:border-oak focus:bg-white/80 focus:ring-4 focus:ring-oak/10 shadow-sm"
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-2 w-full border border-charcoal/20 bg-white/60 px-4 py-3 text-sm normal-case tracking-normal text-charcoal outline-none focus:border-oak"
+          className="w-full rounded-xl border border-white/40 bg-white/50 backdrop-blur-sm px-4 py-3 text-sm text-charcoal outline-none transition-all focus:border-oak focus:bg-white/80 focus:ring-4 focus:ring-oak/10 shadow-sm"
         />
       )}
-    </label>
+    </div>
+  );
+}
+
+function Sidebar({ onSignOut }: Readonly<{ onSignOut: () => void }>) {
+  return (
+    <aside className="hidden lg:flex fixed inset-y-0 left-0 w-72 bg-white/40 backdrop-blur-xl border-r border-white/50 flex-col p-6 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+      <div className="flex items-center gap-4 mb-12 px-2">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-oak to-charcoal flex items-center justify-center text-sand shadow-lg shadow-oak/20">
+          <Building2 className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="font-serif text-2xl font-medium text-charcoal leading-none">Mosantt</h2>
+          <span className="text-[10px] uppercase tracking-widest text-charcoal/50 font-semibold mt-1 block">Painel Admin</span>
+        </div>
+      </div>
+      
+      <nav className="flex flex-col gap-2 flex-1">
+        <button className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all bg-white/80 text-oak shadow-sm scale-[1.02]">
+          <Building2 className="w-5 h-5" /> Gestão de Salas
+        </button>
+      </nav>
+      
+      <div className="flex flex-col gap-2 mt-auto pt-6 border-t border-charcoal/10">
+        <Link to="/" className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-charcoal/60 hover:bg-white/50 hover:text-charcoal transition-all">
+          <Globe className="w-5 h-5" /> Visualizar Site
+        </Link>
+        <button onClick={onSignOut} className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-red-500/80 hover:bg-red-500/10 hover:text-red-600 transition-all text-left">
+          <LogOut className="w-5 h-5" /> Desconectar
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function SalaEditor({ sala, onSave }: Readonly<{ sala: Sala; onSave: (sala: Sala) => Promise<void> }>) {
+  const [local, setLocal] = useState(sala);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setLocal(sala);
+  }, [sala]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onSave(local);
+    setIsSaving(false);
+  };
+
+  const isOcupada = local.status === "Ocupada";
+
+  return (
+    <div className="bg-white/60 backdrop-blur-xl border border-white/60 rounded-3xl p-6 md:p-8 shadow-xl shadow-charcoal/5 transition-all hover:shadow-2xl flex flex-col gap-6 relative overflow-hidden group">
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-oak/10 rounded-full blur-3xl group-hover:bg-oak/20 transition-all duration-700 pointer-events-none" />
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-charcoal/5 relative z-10">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-charcoal to-charcoal/80 text-sand flex items-center justify-center font-serif text-3xl shadow-lg shadow-charcoal/10">
+             {local.numero}
+          </div>
+          <div>
+            <h3 className="font-serif text-2xl text-charcoal">Sala {local.numero}</h3>
+            <span className="text-[10px] uppercase tracking-widest text-charcoal/50 font-bold">Configuração e Status</span>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => setLocal({ ...local, status: isOcupada ? "Disponível" : "Ocupada" })}
+          className="flex items-center gap-3 bg-white/80 p-2 pl-4 rounded-xl shadow-sm border border-white cursor-pointer hover:bg-white transition-all hover:scale-105 active:scale-95"
+          title="Clique para alternar o status"
+        >
+          <div className={`w-2.5 h-2.5 rounded-full ${isOcupada ? 'bg-red-400' : 'bg-emerald-400'} ${isOcupada ? '' : 'animate-pulse'}`} />
+          <span className="text-sm font-bold text-charcoal pr-2 select-none">
+            {local.status}
+          </span>
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+        <Field label="Nome do Doutor/Ocupante" value={local.ocupante ?? ""} onChange={(v) => setLocal({ ...local, ocupante: v })} />
+        <Field label="Especialidade" value={local.especialidade ?? ""} onChange={(v) => setLocal({ ...local, especialidade: v })} />
+        <div className="md:col-span-2">
+          <Field label="Descrição" textarea value={local.nota ?? ""} onChange={(v) => setLocal({ ...local, nota: v })} />
+        </div>
+        <Field label="Instagram" value={local.instagram ?? ""} onChange={(v) => setLocal({ ...local, instagram: v })} />
+        <Field label="Site" value={local.site ?? ""} onChange={(v) => setLocal({ ...local, site: v })} />
+        <div className="md:col-span-2">
+           <Field label="WhatsApp" value={local.whatsapp ?? ""} onChange={(v) => setLocal({ ...local, whatsapp: v })} />
+        </div>
+      </div>
+      
+      <div className="pt-4 flex justify-end relative z-10">
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex items-center gap-2 bg-white/80 border border-charcoal/10 px-6 py-3.5 rounded-xl text-[11px] uppercase tracking-widest font-bold text-charcoal transition-all hover:bg-charcoal hover:text-sand hover:border-charcoal disabled:opacity-50 shadow-sm"
+        >
+          <Save className="w-4 h-4" />
+          {isSaving ? "Salvando..." : `Salvar Sala ${local.numero}`}
+        </button>
+      </div>
+    </div>
   );
 }
 
 function AdminPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const fetchContent = useServerFn(getSiteContent);
-  const fetchIsAdmin = useServerFn(getIsAdmin);
-  const saveSettings = useServerFn(updateSiteSettings);
-  const saveSala = useServerFn(updateSala);
+  const adminQuery = useQuery({ queryKey: ["is-admin"], queryFn: () => getIsAdmin() });
+  const contentQuery = useQuery({ queryKey: ["site-content-admin"], queryFn: () => getSiteContent() });
 
-  const adminQuery = useQuery({ queryKey: ["is-admin"], queryFn: () => fetchIsAdmin() });
-  const contentQuery = useQuery({ queryKey: ["site-content-admin"], queryFn: () => fetchContent() });
-
-  const [form, setForm] = useState<SettingsForm | null>(null);
   const [salas, setSalas] = useState<Sala[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (contentQuery.data?.settings) {
-      const { id: _id, updated_at: _u, ...rest } = contentQuery.data.settings;
-      const raw = contentQuery.data.rawMedia;
-      setForm({
-        ...rest,
-        hero_image_url: raw?.hero_image_url || rest.hero_image_url,
-        tour_video_url: raw?.tour_video_url || rest.tour_video_url,
-      });
+    if (contentQuery.data?.salas) {
+      setSalas(contentQuery.data.salas);
     }
-    if (contentQuery.data?.salas) setSalas(contentQuery.data.salas);
   }, [contentQuery.data]);
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await signOut(auth);
-    navigate({ to: "/auth", replace: true });
-  }
-
-  async function uploadMedia(file: File, field: "hero_image_url" | "tour_video_url") {
-    setUploading(field);
-    try {
-      const path = `${field === "hero_image_url" ? "hero" : "tour"}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
-      const storageRef = ref(firebaseStorage, `site-media/${path}`);
-      await uploadBytes(storageRef, file);
-      
-      setForm((prev) => (prev ? { ...prev, [field]: `site-media/${path}` } : prev));
-      toast.success("Arquivo enviado. Clique em salvar para publicar.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha no envio.");
-    } finally {
-      setUploading(null);
-    }
-  }
-
-  async function handleSaveSettings() {
-    if (!form) return;
-    setSaving(true);
-    try {
-      await saveSettings({ data: form });
-      toast.success("Conteúdo salvo.");
-      queryClient.invalidateQueries();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível salvar.");
-    } finally {
-      setSaving(false);
-    }
+    await navigate({ to: "/auth", replace: true });
   }
 
   async function handleSaveSala(sala: Sala) {
     try {
-      await saveSala({
+      await updateSala({
         data: {
           id: sala.id,
           status: sala.status,
@@ -134,7 +192,7 @@ function AdminPage() {
         },
       });
       toast.success(`Sala ${sala.numero} salva.`);
-      queryClient.invalidateQueries();
+      await queryClient.invalidateQueries();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível salvar a sala.");
     }
@@ -142,14 +200,20 @@ function AdminPage() {
 
   if (adminQuery.data && !adminQuery.data.isAdmin) {
     return (
-      <main className="min-h-screen bg-sand text-charcoal grid place-items-center px-6 text-center">
-        <div>
-          <h1 className="font-serif text-3xl mb-3">Sem permissão</h1>
-          <p className="text-sm text-charcoal/60 font-light mb-6">
-            Esta conta não tem acesso de administrador.
+      <main className="min-h-screen bg-sand text-charcoal grid place-items-center px-6 text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+          <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] rounded-full bg-red-500/5 blur-[120px]" />
+        </div>
+        <div className="bg-white/60 backdrop-blur-xl p-12 rounded-3xl shadow-2xl border border-white/50 max-w-sm w-full relative z-10">
+          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+             <LogOut className="w-8 h-8" />
+          </div>
+          <h1 className="font-serif text-3xl mb-3 text-charcoal tracking-tight">Acesso Negado</h1>
+          <p className="text-sm text-charcoal/70 font-medium mb-10 leading-relaxed">
+            Esta conta não possui privilégios de administrador no sistema.
           </p>
-          <button onClick={handleSignOut} className="text-[10px] uppercase tracking-[0.2em] hover:text-oak">
-            Sair
+          <button onClick={handleSignOut} className="w-full py-4 rounded-xl bg-charcoal text-sand text-xs font-bold uppercase tracking-widest hover:bg-oak transition-colors shadow-lg">
+            Voltar e Sair
           </button>
         </div>
       </main>
@@ -157,178 +221,57 @@ function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-sand text-charcoal px-6 md:px-10 py-12">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex flex-wrap items-end justify-between gap-4 mb-12">
-          <div>
-            <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold">Painel</span>
-            <h1 className="font-serif text-4xl mt-2">Editar o site</h1>
-          </div>
-          <div className="flex gap-6 text-[10px] uppercase tracking-[0.2em] text-charcoal/60">
-            <Link to="/" className="hover:text-oak">
-              Ver site
-            </Link>
-            <button onClick={handleSignOut} className="hover:text-oak">
-              Sair
-            </button>
-          </div>
-        </header>
-
-        {!form ? (
-          <p className="text-sm text-charcoal/60">Carregando...</p>
-        ) : (
-          <div className="flex flex-col gap-12">
-            <section className="flex flex-col gap-4">
-              <h2 className="font-serif text-2xl">Início (hero)</h2>
-              <Field label="Linha superior" value={form.hero_eyebrow} onChange={(v) => setForm({ ...form, hero_eyebrow: v })} />
-              <Field label="Título — 1ª linha" value={form.hero_title_line1} onChange={(v) => setForm({ ...form, hero_title_line1: v })} />
-              <Field label="Título — 2ª linha (itálico)" value={form.hero_title_line2} onChange={(v) => setForm({ ...form, hero_title_line2: v })} />
-              <Field label="Frase de apoio" textarea value={form.hero_subtitle} onChange={(v) => setForm({ ...form, hero_subtitle: v })} />
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-charcoal/60">Foto do topo</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void uploadMedia(file, "hero_image_url");
-                  }}
-                  className="mt-2 block w-full text-xs"
-                />
-                <p className="mt-2 text-xs text-charcoal/50 break-all">{form.hero_image_url}</p>
-                {uploading === "hero_image_url" && <p className="text-xs text-oak">Enviando...</p>}
-              </div>
-            </section>
-
-            <section className="flex flex-col gap-4">
-              <h2 className="font-serif text-2xl">Sobre o espaço</h2>
-              <Field label="Título" value={form.about_title} onChange={(v) => setForm({ ...form, about_title: v })} />
-              <Field label="Texto" textarea value={form.about_text} onChange={(v) => setForm({ ...form, about_text: v })} />
-            </section>
-
-            <section className="flex flex-col gap-4">
-              <h2 className="font-serif text-2xl">Tour em vídeo</h2>
-              <Field label="Título" value={form.tour_title} onChange={(v) => setForm({ ...form, tour_title: v })} />
-              <Field label="Texto" textarea value={form.tour_text} onChange={(v) => setForm({ ...form, tour_text: v })} />
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-charcoal/60">Vídeo</span>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void uploadMedia(file, "tour_video_url");
-                  }}
-                  className="mt-2 block w-full text-xs"
-                />
-                <p className="mt-2 text-xs text-charcoal/50 break-all">{form.tour_video_url}</p>
-                {uploading === "tour_video_url" && <p className="text-xs text-oak">Enviando...</p>}
-              </div>
-            </section>
-
-            <section className="flex flex-col gap-4">
-              <h2 className="font-serif text-2xl">Contato e endereço</h2>
-              <Field label="Link do WhatsApp" value={form.whatsapp_url} onChange={(v) => setForm({ ...form, whatsapp_url: v })} />
-              <Field label="Instagram" value={form.instagram_url} onChange={(v) => setForm({ ...form, instagram_url: v })} />
-              <Field label="Endereço — linha 1" value={form.address_line1} onChange={(v) => setForm({ ...form, address_line1: v })} />
-              <Field label="Endereço — linha 2" value={form.address_line2} onChange={(v) => setForm({ ...form, address_line2: v })} />
-              <Field label="Link do Google Maps" value={form.maps_url} onChange={(v) => setForm({ ...form, maps_url: v })} />
-            </section>
-
-            <button
-              onClick={handleSaveSettings}
-              disabled={saving}
-              className="self-start bg-charcoal px-8 py-4 text-[11px] uppercase tracking-[0.25em] text-sand transition-colors hover:bg-oak disabled:opacity-50"
-            >
-              {saving ? "Salvando..." : "Salvar conteúdo"}
-            </button>
-
-            <section className="flex flex-col gap-8 border-t border-charcoal/10 pt-12">
-              <h2 className="font-serif text-2xl">Salas</h2>
-              {salas.map((sala, idx) => (
-                <div key={sala.id} className="border border-charcoal/10 p-6 flex flex-col gap-4 bg-white/40">
-                  <div className="flex items-center justify-between">
-                    <span className="font-serif text-3xl">{sala.numero}</span>
-                    <select
-                      value={sala.status}
-                      onChange={(e) => {
-                        const next = [...salas];
-                        next[idx] = { ...sala, status: e.target.value };
-                        setSalas(next);
-                      }}
-                      className="border border-charcoal/20 bg-white/60 px-3 py-2 text-xs"
-                    >
-                      <option value="Disponível">Disponível</option>
-                      <option value="Ocupada">Ocupada</option>
-                    </select>
-                  </div>
-                  <Field
-                    label="Nome do doutor"
-                    value={sala.ocupante ?? ""}
-                    onChange={(v) => {
-                      const next = [...salas];
-                      next[idx] = { ...sala, ocupante: v };
-                      setSalas(next);
-                    }}
-                  />
-                  <Field
-                    label="Especialidade"
-                    value={sala.especialidade ?? ""}
-                    onChange={(v) => {
-                      const next = [...salas];
-                      next[idx] = { ...sala, especialidade: v };
-                      setSalas(next);
-                    }}
-                  />
-                  <Field
-                    label="Descrição"
-                    textarea
-                    value={sala.nota ?? ""}
-                    onChange={(v) => {
-                      const next = [...salas];
-                      next[idx] = { ...sala, nota: v };
-                      setSalas(next);
-                    }}
-                  />
-                  <Field
-                    label="Instagram"
-                    value={sala.instagram ?? ""}
-                    onChange={(v) => {
-                      const next = [...salas];
-                      next[idx] = { ...sala, instagram: v };
-                      setSalas(next);
-                    }}
-                  />
-                  <Field
-                    label="Site"
-                    value={sala.site ?? ""}
-                    onChange={(v) => {
-                      const next = [...salas];
-                      next[idx] = { ...sala, site: v };
-                      setSalas(next);
-                    }}
-                  />
-                  <Field
-                    label="WhatsApp"
-                    value={sala.whatsapp ?? ""}
-                    onChange={(v) => {
-                      const next = [...salas];
-                      next[idx] = { ...sala, whatsapp: v };
-                      setSalas(next);
-                    }}
-                  />
-                  <button
-                    onClick={() => void handleSaveSala(sala)}
-                    className="self-start border border-charcoal/30 px-6 py-3 text-[10px] uppercase tracking-[0.25em] hover:border-oak hover:text-oak"
-                  >
-                    Salvar sala {sala.numero}
-                  </button>
-                </div>
-              ))}
-            </section>
-          </div>
-        )}
+    <div className="min-h-screen bg-sand text-charcoal font-sans selection:bg-oak/20 flex overflow-hidden">
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-oak/10 blur-[150px]" />
+        <div className="absolute -bottom-[10%] -right-[5%] w-[60%] h-[60%] rounded-full bg-charcoal/5 blur-[150px]" />
       </div>
-    </main>
+
+      <Sidebar onSignOut={handleSignOut} />
+
+      <main className="flex-1 lg:ml-72 h-screen overflow-y-auto overflow-x-hidden relative z-10">
+        
+        {/* Mobile Nav Header */}
+        <div className="lg:hidden flex items-center justify-between p-6 bg-white/40 backdrop-blur-xl border-b border-white/50 sticky top-0 z-40">
+           <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-oak to-charcoal flex items-center justify-center text-sand shadow-lg">
+                <Building2 className="w-5 h-5" />
+             </div>
+             <h2 className="font-serif text-xl font-medium text-charcoal">Mosantt Admin</h2>
+           </div>
+           <button onClick={handleSignOut} className="p-2 text-charcoal/60 hover:text-red-500 transition-colors">
+              <LogOut className="w-6 h-6" />
+           </button>
+        </div>
+
+        <div className="max-w-5xl mx-auto p-6 md:p-12 lg:p-16">
+          <header className="mb-10 lg:mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h1 className="font-serif text-4xl lg:text-5xl text-charcoal tracking-tight mb-4">
+              Gerenciamento de Salas
+            </h1>
+            <p className="text-charcoal/60 text-sm md:text-base font-medium max-w-2xl leading-relaxed">
+              Mantenha os status de disponibilidade, informações de médicos ocupantes e dados de contato das salas sempre atualizados.
+            </p>
+          </header>
+
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
+            {contentQuery.isLoading ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-5 bg-white/30 backdrop-blur-md rounded-3xl border border-white/50">
+                 <div className="w-12 h-12 border-4 border-oak/30 border-t-oak rounded-full animate-spin" />
+                 <p className="text-sm text-charcoal/60 uppercase tracking-widest font-bold">Carregando salas...</p>
+              </div>
+            ) : (
+              <div className="pb-24">
+                <div className="flex flex-col gap-10">
+                  {salas.map((sala) => (
+                    <SalaEditor key={sala.id} sala={sala} onSave={handleSaveSala} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

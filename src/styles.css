@@ -19,7 +19,7 @@
  */
 
 @theme inline {
-  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-serif: "Liter", ui-serif, Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-oak: var(--oak);
   --color-leaf: var(--leaf);

@@ -21,16 +21,17 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    const fd = new FormData(e.currentTarget);
+    const email = fd.get("email") as string;
+    const password = fd.get("password") as string;
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate({ to: "/admin" });
+      await navigate({ to: "/admin" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível entrar.");
     } finally {
@@ -47,23 +48,21 @@ function AuthPage() {
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="text-[10px] uppercase tracking-[0.25em] text-charcoal/60">
-            E-mail
+            E-mail{" "}
             <input
               type="email"
+              name="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="mt-2 w-full border border-charcoal/20 bg-transparent px-4 py-3 text-sm tracking-normal normal-case text-charcoal outline-none focus:border-oak"
             />
           </label>
           <label className="text-[10px] uppercase tracking-[0.25em] text-charcoal/60">
-            Senha
+            Senha{" "}
             <input
               type="password"
+              name="password"
               required
               minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="mt-2 w-full border border-charcoal/20 bg-transparent px-4 py-3 text-sm tracking-normal normal-case text-charcoal outline-none focus:border-oak"
             />
           </label>

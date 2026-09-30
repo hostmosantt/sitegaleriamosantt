@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import logoAsset from "@/assets/mosantt-logo.png.asset.json";
+import { useState, useRef } from "react";
 import { getSiteContent, type Sala, type SiteSettings } from "@/lib/site.functions";
 
 const reviews = [
@@ -52,7 +52,7 @@ const fallback: Omit<SiteSettings, "id" | "updated_at"> = {
   hero_title_line2: "melhor forma.",
   hero_subtitle:
     "Um ecossistema de clínicas independentes unidas pelo design, bem-estar e excelência técnica.",
-  hero_image_url: "/assets/mosantt-hero.jpg",
+  hero_image_url: "/assets/mosantt-hero.webp",
   about_title: "Um novo conceito em Rio Branco",
   about_text:
     "A Galeria Mosantt é um espaço que reúne saúde, odontologia, estética e bem-estar em um ambiente sofisticado, acolhedor e pensado para proporcionar uma experiência diferenciada. Um conceito que conecta profissionais, serviços e pessoas em um só lugar, com cuidado, conforto e excelência em cada detalhe.",
@@ -64,36 +64,10 @@ const fallback: Omit<SiteSettings, "id" | "updated_at"> = {
   instagram_url: "https://instagram.com/mosantt",
   address_line1: "Estr. Dias Martins, 1303",
   address_line2: "Jardim de Alah, Rio Branco — AC, 69915-526",
-  maps_url:
-    "https://www.google.com/maps/search/?api=1&query=Estrada+Dias+Martins+1303+Jardim+de+Alah+Rio+Branco",
+  maps_url: "https://www.google.com/maps/place/Mosantt+%7C+Galeria+de+Sa%C3%BAde+e+est%C3%A9tica+%7C+Rio+Branco/@-9.961057,-67.854059,16z/data=!4m15!1m8!3m7!1s0x917f8c20df93a57b:0x5f27f9f1328090f5!2sEstr.+Dias+Martins,+1303+-+Jardim+Primavera,+Rio+Branco+-+AC,+69915-526,+Brasil!3b1!8m2!3d-9.9610574!4d-67.854059!16s%2Fg%2F11hbgpl0vy!3m5!1s0x917f8d002ecf3b03:0xe507fab3e21c399a!8m2!3d-9.9610574!4d-67.854059!16s%2Fg%2F11mcjtgkyk?hl=pt-BR&entry=ttu&g_ep=EgoyMDI2MDkyOC4wIKXMDSoASAFQAw%3D%3D",
 };
 
-const fallbackSalas: Sala[] = [
-  {
-    id: "sala-3",
-    numero: "03",
-    status: "Ocupada",
-    ocupante: "Drª. Nayra Damasceno Sampaio",
-    especialidade: "RAVIVVARE",
-    nota: null,
-    instagram: null,
-    site: null,
-    whatsapp: null,
-    ordem: 1,
-  },
-  {
-    id: "sala-5",
-    numero: "05",
-    status: "Ocupada",
-    ocupante: "Dr. Alison Mota",
-    especialidade: "Studio ALS Odontologia Integrada",
-    nota: "Invisalign Doctor",
-    instagram: null,
-    site: null,
-    whatsapp: null,
-    ordem: 2,
-  }
-];
+// fallbackSalas is no longer needed since getSiteContent handles default rooms
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -130,123 +104,132 @@ export const Route = createFileRoute("/")({
 function Index() {
   const data = Route.useLoaderData();
   const s = { ...fallback, ...(data.settings ?? {}) };
-  const salas: Sala[] = data.salas?.length ? data.salas : fallbackSalas;
+  const salas: Sala[] = data.salas ?? [];
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [fading, setFading] = useState(false);
 
   return (
     <div className="overflow-x-clip bg-sand text-charcoal selection:bg-oak/30">
-      <section id="top" className="relative min-h-[100svh] w-full overflow-hidden text-sand">
-        <motion.img
-          src={s.hero_image_url}
-          alt="Letreiro Mosantt em painel de madeira clara com palmeiras à frente"
-          className="absolute inset-0 w-full h-full object-cover object-center will-change-transform"
-          initial={{ clipPath: "inset(0 0 100% 0)", scale: 1.12 }}
-          animate={{ clipPath: "inset(0 0 0% 0)", scale: 1 }}
-          transition={{
-            clipPath: { duration: 1.6, ease: [0.22, 1, 0.36, 1] },
-            scale: { duration: 2.4, ease: [0.22, 1, 0.36, 1] },
+      <section id="top" className="relative min-h-[100svh] w-full overflow-hidden text-sand flex flex-col">
+        {/* Video Background */}
+        <motion.video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          poster={s.hero_image_url}
+          className="absolute inset-0 w-full h-full object-cover object-center will-change-transform bg-charcoal"
+          initial={{ scale: 1.12 }}
+          animate={{ scale: 1 }}
+          transition={{ scale: { duration: 2.4, ease: [0.22, 1, 0.36, 1] } }}
+          style={{ opacity: fading ? 0 : 1, transition: "opacity 1.2s ease-in-out" }}
+          onCanPlay={(e) => {
+            e.currentTarget.playbackRate = 0.85;
           }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-b from-charcoal/50 via-charcoal/20 to-charcoal/70"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-r from-charcoal/40 via-transparent to-transparent"
-        />
-
-        <motion.nav
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-5 md:px-10 md:py-6"
+          onTimeUpdate={(e) => {
+            const vid = e.currentTarget;
+            if (!fading && vid.duration && vid.duration - vid.currentTime <= 1.2) {
+              setFading(true);
+            }
+          }}
+          onEnded={(e) => {
+            const vid = e.currentTarget;
+            vid.currentTime = 0;
+            vid.play();
+            // Using a slight timeout before fading in ensures the seek operation is complete
+            // and frame is rendered, avoiding a flicker of the end frame.
+            setTimeout(() => setFading(false), 50);
+          }}
         >
-          <a href="#top" className="block">
-            <img
-              src={logoAsset.url}
-              alt="Mosantt"
-              className="h-9 w-auto brightness-0 invert opacity-90 transition-opacity hover:opacity-100 md:h-10"
-            />
-          </a>
-          <div className="hidden md:flex gap-8 text-[11px] uppercase tracking-[0.25em] font-light text-sand/90">
-            <a href="#espaco" className="hover:text-oak transition-colors">O Espaço</a>
-            <a href="#tour" className="hover:text-oak transition-colors">Tour</a>
-            <a href="#salas" className="hover:text-oak transition-colors">Salas</a>
-            <a href="#avaliacoes" className="hover:text-oak transition-colors">Avaliações</a>
-            <a href="#localizacao" className="hover:text-oak transition-colors">Localização</a>
-          </div>
-          <a
-            href={s.whatsapp_url}
-            className="inline-flex min-h-11 shrink-0 items-center border border-sand/40 px-4 text-[10px] uppercase tracking-[0.18em] text-sand transition-colors hover:bg-sand hover:text-charcoal md:hidden"
-          >
-            Agendar
-          </a>
-          <div className="col-span-2 -mx-1 flex min-w-0 gap-5 overflow-x-auto px-1 pb-1 text-[9px] uppercase tracking-[0.18em] text-sand/75 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
-            <a href="#espaco" className="min-h-9 shrink-0 content-center">O Espaço</a>
-            <a href="#tour" className="min-h-9 shrink-0 content-center">Tour</a>
-            <a href="#salas" className="min-h-9 shrink-0 content-center">Salas</a>
-            <a href="#avaliacoes" className="min-h-9 shrink-0 content-center">Avaliações</a>
-            <a href="#localizacao" className="min-h-9 shrink-0 content-center">Localização</a>
-          </div>
-        </motion.nav>
+          <source src="/assets/hero%20galeria%20mosantt.mp4" type="video/mp4" />
+        </motion.video>
 
-        <div className="relative z-10 flex min-h-[calc(100svh-132px)] flex-col justify-end px-5 pb-8 pt-10 sm:pb-12 md:min-h-[calc(100vh-96px)] md:px-10 md:pb-20 md:pt-40">
+        {/* Overlays for contrast */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/40 to-charcoal/50"
+        />
+
+        <div className="relative z-20 flex flex-1 flex-col justify-between px-5 pb-8 pt-6 md:px-10 md:pb-16 md:pt-8">
+          {/* Top Navbar */}
+          <motion.nav
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-center justify-between gap-4"
+          >
+            <a href="#top" className="block shrink-0">
+              <img
+                src="/assets/favicon.png"
+                alt="Mosantt"
+                className="h-10 md:h-12 w-auto transition-transform hover:scale-105 drop-shadow-md"
+              />
+            </a>
+            
+            {/* Desktop Links */}
+            <div className="hidden md:flex gap-8 text-[11px] uppercase tracking-[0.25em] font-medium text-sand/90">
+              <a href="#espaco" className="hover:text-oak transition-colors drop-shadow-sm">O Espaço</a>
+              <a href="#tour" className="hover:text-oak transition-colors drop-shadow-sm">Tour</a>
+              <a href="#salas" className="hover:text-oak transition-colors drop-shadow-sm">Salas</a>
+              <a href="#avaliacoes" className="hover:text-oak transition-colors drop-shadow-sm">Avaliações</a>
+              <a href="#localizacao" className="hover:text-oak transition-colors drop-shadow-sm">Localização</a>
+            </div>
+
+            {/* Mobile Actions */}
+            <div className="flex md:hidden gap-3">
+              <a
+                href={s.whatsapp_url}
+                className="flex h-10 items-center rounded-full bg-sand px-5 text-[10px] font-bold uppercase tracking-[0.2em] text-charcoal transition-transform active:scale-95 shadow-lg"
+              >
+                Agendar
+              </a>
+            </div>
+          </motion.nav>
+
+          {/* Main Hero Content - Bottom Heavy for Mobile Reachability */}
           <motion.div
-            className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-6 items-end"
+            className="w-full max-w-7xl mx-auto flex flex-col gap-5 mt-auto"
             initial="hidden"
             animate="visible"
             variants={{
               hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { staggerChildren: 0.14, delayChildren: 0.55 } },
+              visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.4 } },
             }}
           >
-            <motion.div
-              className="col-span-12 lg:col-span-8"
-              variants={{
-                hidden: { y: 24, opacity: 0 },
-                visible: { y: 0, opacity: 1, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
-              }}
-            >
-              <motion.span
-                variants={{
-                  hidden: { y: 12, opacity: 0 },
-                  visible: { y: 0, opacity: 1, transition: { duration: 0.6 } },
-                }}
-                className="mb-4 block max-w-[28rem] text-[9px] uppercase leading-relaxed tracking-[0.25em] text-sand/75 md:mb-6 md:text-[11px] md:tracking-[0.35em]"
-              >
+            <motion.div variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.8, ease: "easeOut" } } }}>
+              <span className="mb-3 block text-[10px] uppercase leading-relaxed tracking-[0.3em] text-sand/80 font-bold drop-shadow-md md:mb-5 md:text-xs md:tracking-[0.4em]">
                 {s.hero_eyebrow}
-              </motion.span>
-              <h1 className="font-serif text-[2.75rem] leading-[0.94] text-sand drop-shadow-[0_2px_20px_rgba(0,0,0,0.35)] sm:text-6xl md:text-7xl lg:text-8xl">
+              </span>
+              <h1 className="font-serif text-[3.25rem] sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05] text-sand drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
                 {s.hero_title_line1} <br />
-                <span className="italic">{s.hero_title_line2}</span>
+                <span className="italic text-sand/95">{s.hero_title_line2}</span>
               </h1>
             </motion.div>
-            <motion.div
-              className="col-span-12 min-w-0 lg:col-span-4 lg:border-l lg:border-sand/25 lg:pl-8"
-              variants={{
-                hidden: { y: 24, opacity: 0 },
-                visible: { y: 0, opacity: 1, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
-              }}
-            >
-              <p className="max-w-sm text-sm font-light leading-relaxed text-sand/85 sm:text-base md:text-lg">
+            
+            <motion.div variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 0.8, ease: "easeOut" } } }}>
+              <p className="max-w-[18rem] sm:max-w-md text-base sm:text-lg font-light leading-relaxed text-sand/90 drop-shadow-md">
                 {s.hero_subtitle}
               </p>
-              <div className="mt-5 flex flex-wrap gap-3 md:mt-8">
+              
+              {/* Primary CTAs */}
+              <div className="mt-8 flex flex-col sm:flex-row gap-3 w-full max-w-md">
                 <a
                   href={s.whatsapp_url}
-                  className="hidden min-h-12 items-center bg-sand px-7 text-[11px] uppercase tracking-[0.2em] text-charcoal transition-colors hover:bg-oak hover:text-sand sm:inline-flex md:tracking-[0.25em]"
+                  className="flex h-14 w-full sm:w-auto items-center justify-center rounded-2xl bg-sand px-8 text-xs font-bold uppercase tracking-[0.2em] text-charcoal transition-all hover:bg-oak hover:text-sand shadow-xl shadow-black/20 active:scale-95"
                 >
                   Agendar Visita
                 </a>
                 <a
                   href={s.instagram_url}
-                  className="inline-flex min-h-12 items-center border border-sand/40 px-6 text-[10px] uppercase tracking-[0.2em] text-sand transition-colors hover:border-sand hover:bg-sand/10 md:px-7 md:text-[11px] md:tracking-[0.25em]"
+                  className="flex h-14 w-full sm:w-auto items-center justify-center rounded-2xl border border-sand/40 bg-black/20 backdrop-blur-md px-8 text-xs font-bold uppercase tracking-[0.2em] text-sand transition-all hover:border-sand hover:bg-black/40 active:scale-95"
                 >
                   @mosantt
                 </a>
               </div>
             </motion.div>
           </motion.div>
+        </div>
 
           <motion.div
             initial={{ opacity: 0 }}
@@ -257,39 +240,59 @@ function Index() {
             <span className="text-[10px] uppercase tracking-[0.35em]">Role</span>
             <span className="w-px h-10 bg-sand/40 animate-scroll-hint origin-top" />
           </motion.div>
-        </div>
       </section>
 
-      <section id="espaco" className="scroll-mt-4 bg-leaf px-5 py-16 text-sand sm:py-20 md:px-8 md:py-24">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="w-12 h-12 border border-sand/30 mx-auto mb-8 grid place-items-center">
-            <span className="text-xs font-serif italic">tt</span>
+      <section id="espaco" className="scroll-mt-4 bg-leaf px-5 py-24 text-sand sm:py-32 md:px-8">
+        <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
+          {/* Símbolo */}
+          <div className="mx-auto mb-8 flex justify-center">
+            <img src="/assets/favicon.png" alt="Mosantt" className="h-12 md:h-14 w-auto drop-shadow-sm" />
           </div>
-          <h2 className="mb-5 font-serif text-3xl leading-tight md:mb-6 md:text-4xl">{s.about_title}</h2>
-          <p className="mx-auto max-w-2xl text-base font-light leading-relaxed opacity-80 md:text-lg">
-            {s.about_text}
+
+          {/* Header */}
+          <span className="mb-6 block text-xs md:text-sm uppercase tracking-[0.3em] font-bold text-sand/70 drop-shadow-sm">
+            Galeria Mosantt
+          </span>
+
+          {/* Title */}
+          <h2 className="mb-10 font-serif text-4xl leading-[1.1] md:text-5xl lg:text-6xl text-sand drop-shadow-sm">
+            Mais que um espaço.<br />
+            <span className="italic text-sand/90">Uma experiência de cuidado.</span>
+          </h2>
+
+          {/* Subtitle */}
+          <p className="mx-auto max-w-3xl text-xs md:text-sm uppercase tracking-[0.2em] font-bold text-sand/80 leading-relaxed">
+            Saúde <span className="mx-2 text-sand/30 font-light">·</span> Odontologia <span className="mx-2 text-sand/30 font-light">·</span> Bem-estar
           </p>
         </div>
       </section>
 
       <section id="tour" className="scroll-mt-4 px-5 py-16 sm:py-20 md:px-8 md:py-24">
-        <div className="mx-auto grid max-w-7xl grid-cols-12 items-center gap-10">
-          <div className="col-span-12 min-w-0 lg:col-span-5">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-12 items-center gap-10">
+          <div className="col-span-1 min-w-0 lg:col-span-5">
             <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-4 block">
               Conheça a Galeria
             </span>
             <h2 className="mb-5 font-serif text-4xl leading-[1.05] md:mb-6 md:text-5xl">{s.tour_title}</h2>
-            <p className="text-base font-light leading-relaxed text-charcoal/70 max-w-md">
+            <p className="text-base md:text-lg font-light leading-relaxed text-charcoal/70 max-w-lg">
               {s.tour_text}
             </p>
-            <div className="mt-8 flex flex-col gap-2 text-sm font-light text-charcoal/70">
-              <span>· {salas.length || 5} salas privativas</span>
-              <span>· Recepção e áreas de convivência</span>
-              <span>· Estacionamento e segurança</span>
-              <span>· Localização estratégica no Jardim de Alah</span>
+            <div className="mt-8 flex flex-col gap-3 md:gap-4 text-base md:text-lg font-light text-charcoal/70">
+              <span className="flex items-center gap-2">
+                <span className="h-px w-4 bg-oak/60"></span> {salas.length || 5} consultórios de alto padrão
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-px w-4 bg-oak/60"></span> Recepção sofisticada e áreas de estar
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-px w-4 bg-oak/60"></span> Estacionamento privativo e segurança
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-px w-4 bg-oak/60"></span> Localização estratégica no Jardim de Alah
+              </span>
             </div>
           </div>
-          <div className="col-span-12 min-w-0 lg:col-span-7">
+          <div className="col-span-1 min-w-0 lg:col-span-7">
             <video
               src={s.tour_video_url}
               controls
@@ -314,9 +317,8 @@ function Index() {
                 Cinco salas, <span className="italic">um só endereço.</span>
               </h2>
             </div>
-            <p className="text-sm font-light text-charcoal/60 max-w-xs">
-              Salas prontas para profissionais de saúde e estética. Consulte disponibilidade e
-              condições de locação.
+            <p className="text-base md:text-lg font-light text-charcoal/60 max-w-sm md:max-w-md leading-relaxed">
+              Espaços projetados para elevar o padrão do seu atendimento. Consulte as condições exclusivas de locação.
             </p>
           </div>
 
@@ -342,35 +344,35 @@ function Index() {
                   <div className="mt-8">
                     {ocupada ? (
                       <>
-                        <p className="text-[10px] uppercase tracking-widest text-oak font-semibold mb-2">
+                        <p className="text-[10px] md:text-xs uppercase tracking-widest text-oak font-semibold mb-2 md:mb-3">
                           {sala.especialidade}
                         </p>
-                        <h3 className="font-serif text-2xl leading-tight">{sala.ocupante}</h3>
+                        <h3 className="font-serif text-2xl md:text-3xl leading-tight">{sala.ocupante}</h3>
                       </>
                     ) : (
-                      <h3 className="font-serif text-2xl italic leading-tight">Sala disponível</h3>
+                      <h3 className="font-serif text-2xl md:text-3xl italic leading-tight">Sala disponível</h3>
                     )}
-                    <p className="text-sm text-charcoal/60 mt-2 font-light">{sala.nota}</p>
-                    {ocupada && (sala.instagram || sala.site || sala.whatsapp) && (
-                      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[10px] uppercase tracking-[0.2em]">
-                        {sala.instagram && (
-                          <a
-                            href={sala.instagram}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-charcoal/70 hover:text-oak transition-colors underline underline-offset-4 decoration-oak/40"
-                          >
-                            Instagram
-                          </a>
-                        )}
+                    <p className="text-base md:text-lg text-charcoal/60 mt-2 font-light">{sala.nota}</p>
+                    {(sala.instagram || sala.site || sala.whatsapp) && (
+                      <div className="mt-5 flex flex-wrap gap-2 text-[9px] uppercase tracking-[0.15em] font-medium">
                         {sala.site && (
                           <a
                             href={sala.site}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-charcoal/70 hover:text-oak transition-colors underline underline-offset-4 decoration-oak/40"
+                            className="inline-flex h-8 items-center rounded-full border border-charcoal/20 px-4 text-charcoal/80 transition-colors hover:border-charcoal hover:bg-charcoal hover:text-sand"
                           >
-                            Site
+                            Acessar site
+                          </a>
+                        )}
+                        {sala.instagram && (
+                          <a
+                            href={sala.instagram}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-8 items-center rounded-full border border-charcoal/20 px-4 text-charcoal/80 transition-colors hover:border-charcoal hover:bg-charcoal hover:text-sand"
+                          >
+                            Instagram
                           </a>
                         )}
                         {sala.whatsapp && (
@@ -378,7 +380,7 @@ function Index() {
                             href={sala.whatsapp}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-charcoal/70 hover:text-oak transition-colors underline underline-offset-4 decoration-oak/40"
+                            className="inline-flex h-8 items-center rounded-full border border-charcoal/20 px-4 text-charcoal/80 transition-colors hover:border-charcoal hover:bg-charcoal hover:text-sand"
                           >
                             WhatsApp
                           </a>
@@ -391,11 +393,11 @@ function Index() {
             })}
             <li className="flex min-h-[220px] flex-col justify-between bg-charcoal p-6 text-sand sm:p-8 md:min-h-[240px]">
               <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold">
-                Interessado?
+                Deseja fazer parte?
               </span>
               <div>
-                <h3 className="font-serif text-2xl leading-tight mb-4">
-                  Fale sobre a locação de uma sala.
+                <h3 className="font-serif text-3xl md:text-4xl leading-tight mb-4 md:mb-6">
+                  Traga seu consultório para a Mosantt.
                 </h3>
                 <a
                   href={s.whatsapp_url}
@@ -431,11 +433,11 @@ function Index() {
             </div>
           </div>
 
-          <ul className="columns-1 md:columns-2 lg:columns-3 gap-4">
+          <ul className="flex overflow-x-auto snap-x snap-mandatory pb-6 -mx-5 px-5 gap-4 md:gap-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0 md:pb-0 md:block md:columns-2 lg:columns-3">
             {reviews.map((review) => (
               <li
                 key={review.name}
-                className="mb-4 break-inside-avoid border border-sand/15 bg-sand/5 p-5 sm:p-6 md:p-7"
+                className="w-[85vw] min-w-[85vw] sm:w-[400px] sm:min-w-[400px] shrink-0 snap-center md:w-auto md:min-w-0 md:mb-4 md:break-inside-avoid border border-sand/15 bg-sand/5 p-5 sm:p-6 md:p-7"
               >
                 <div className="flex items-center justify-between gap-4 mb-6">
                   <div className="text-oak text-xs tracking-[0.15em]" aria-hidden="true">★★★★★</div>
@@ -450,7 +452,7 @@ function Index() {
           </ul>
 
           <div className="mt-10 flex flex-wrap items-center justify-between gap-5 border-t border-sand/15 pt-8">
-            <p className="text-sm font-light text-sand/60">Avaliações compartilhadas por pacientes e visitantes.</p>
+            <p className="text-base font-light text-sand/60">Avaliações compartilhadas por pacientes e visitantes.</p>
             <a
               href={s.maps_url}
               target="_blank"
@@ -482,7 +484,7 @@ function Index() {
                 href={s.maps_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
+                className="inline-flex min-h-11 w-fit items-center text-base underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
               >
                 Ver no Google Maps
               </a>
@@ -490,7 +492,7 @@ function Index() {
                 href={s.instagram_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
+                className="inline-flex min-h-11 w-fit items-center text-base underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
               >
                 Instagram @mosantt
               </a>
@@ -498,10 +500,21 @@ function Index() {
                 href={s.whatsapp_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 w-fit items-center text-sm underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
+                className="inline-flex min-h-11 w-fit items-center text-base underline decoration-oak/30 underline-offset-8 transition-colors hover:text-oak"
               >
                 WhatsApp
               </a>
+            </div>
+            
+            <div className="mt-10 w-full max-w-md aspect-[4/3] sm:aspect-[16/7] rounded border border-sand/10 overflow-hidden relative grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+              <iframe
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(s.address_line1 + " " + s.address_line2)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+              ></iframe>
             </div>
           </div>
           
@@ -510,7 +523,7 @@ function Index() {
               <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-3 block">
                 Horário de Funcionamento
               </span>
-              <p className="text-sand/80 font-light text-sm leading-relaxed">
+              <p className="text-sand/80 font-light text-base leading-relaxed">
                 Segunda a sexta: 08:00 às 18:00<br />
                 Sábado: 08:00 às 12:00
               </p>
@@ -519,7 +532,7 @@ function Index() {
               <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-3 block">
                 Contato Comercial
               </span>
-              <p className="text-sand/80 font-light text-sm leading-relaxed">
+              <p className="text-sand/80 font-light text-base leading-relaxed">
                 WhatsApp / Tel: (68) 99230-2967
               </p>
             </div>
@@ -527,7 +540,7 @@ function Index() {
               <span className="text-[10px] uppercase tracking-[0.3em] text-oak font-semibold mb-3 block">
                 Dados da Empresa
               </span>
-              <p className="text-sand/50 font-light text-xs leading-relaxed">
+              <p className="text-sand/50 font-light text-sm leading-relaxed">
                 Razão Social: J M M & A M RABELO LTDA<br />
                 CNPJ: 46.748.316/0001-67<br />
                 Mosantt Saúde e Estética
@@ -539,14 +552,20 @@ function Index() {
         <div className="mx-auto mt-14 flex max-w-7xl flex-col items-center justify-between gap-6 border-t border-sand/10 pt-8 text-center min-w-0 md:mt-20 md:flex-row md:pt-10 md:text-left">
           <a href="#top" className="block shrink-0">
             <img
-              src={logoAsset.url}
+              src="/assets/favicon.png"
               alt="Mosantt"
-              className="h-8 w-auto brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
+              className="h-10 w-auto hover:scale-105 transition-transform"
             />
           </a>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-sand/30 min-w-0">
-            © {new Date().getFullYear()} Mosantt — Saúde e Estética.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <div className="flex gap-4 text-[10px] uppercase tracking-[0.15em] font-medium">
+              <Link to="/termos" className="text-sand/40 hover:text-sand transition-colors">Termos de Uso</Link>
+              <Link to="/privacidade" className="text-sand/40 hover:text-sand transition-colors">Privacidade</Link>
+            </div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-sand/30 min-w-0">
+              © {new Date().getFullYear()} Mosantt — Saúde e Estética.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

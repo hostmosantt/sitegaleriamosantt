@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-cvnAX2Ol.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`min-h-screen grid place-items-center bg-sand text-charcoal`,children:(0,t.jsx)(`p`,{className:`font-serif text-2xl`,children:`Página não encontrada`})});export{n as notFoundComponent};

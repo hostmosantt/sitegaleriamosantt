@@ -1,6 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
+import { doc, getDoc, collection, query, orderBy, getDocs, setDoc } from "firebase/firestore";
+import { ref, getDownloadURL } from "firebase/storage";
+import { db, storage, auth } from "./firebase";
 
-// Definitions matching our Firestore documents structure
 export type SiteSettings = {
   hero_eyebrow: string;
   hero_title_line1: string;
@@ -32,34 +33,40 @@ export type Sala = {
   ordem: number;
 };
 
-export const getSiteContent = createServerFn({ method: "GET" }).handler(async () => {
+const baseSalas: Sala[] = [
+  { id: "sala-1", numero: "01", status: "Disponível", ocupante: null, especialidade: null, nota: null, instagram: null, site: null, whatsapp: null, ordem: 1 },
+  { id: "sala-2", numero: "02", status: "Disponível", ocupante: null, especialidade: null, nota: null, instagram: null, site: null, whatsapp: null, ordem: 2 },
+  { id: "sala-3", numero: "03", status: "Disponível", ocupante: null, especialidade: null, nota: null, instagram: null, site: null, whatsapp: null, ordem: 3 },
+  { id: "sala-4", numero: "04", status: "Disponível", ocupante: null, especialidade: null, nota: null, instagram: null, site: null, whatsapp: null, ordem: 4 },
+  { id: "sala-5", numero: "05", status: "Ocupada", ocupante: "Studio ALS", especialidade: "Dr. Alison Mota - Invisalign doctor", nota: "Odontologia integrada", instagram: "https://instagram.com/dralisonmota", site: "https://dr-alison-prototipo.web.app", whatsapp: null, ordem: 5 },
+];
+
+export async function getSiteContent() {
   try {
-    // Dynamic import — firebase-admin never enters the client bundle
-    const getAdmin = (await import("@/lib/firebase-admin")).default;
-    const { adminDb, adminStorage } = await getAdmin();
+    const settingsRef = doc(db, "site_settings", "main");
+    const settingsSnap = await getDoc(settingsRef);
+    const settings = settingsSnap.exists() ? (settingsSnap.data() as SiteSettings) : null;
 
-    const settingsDoc = await adminDb.collection("site_settings").doc("main").get();
-    const settings = settingsDoc.exists ? (settingsDoc.data() as SiteSettings) : null;
-
-    const salasSnapshot = await adminDb.collection("salas").orderBy("ordem", "asc").get();
-    const salas = salasSnapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data(),
+    const salasRef = collection(db, "salas");
+    const salasSnap = await getDocs(salasRef);
+    
+    const fetchedSalas = salasSnap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
     })) as Sala[];
 
-    const resolve = async (value: string) => {
+    const salas = baseSalas.map(baseSala => {
+      const found = fetchedSalas.find(s => s.id === baseSala.id);
+      return found ? { ...baseSala, ...found } : baseSala;
+    });
+
+    const resolveUrl = async (value: string) => {
       if (!value.startsWith("site-media/")) return value;
-      const path = value.slice("site-media/".length);
       try {
-        const bucket = adminStorage.bucket();
-        const file = bucket.file(path);
-        const [url] = await file.getSignedUrl({
-          action: "read",
-          expires: Date.now() + 1000 * 60 * 60 * 24 * 7, // 7 days
-        });
-        return url;
+        const fileRef = ref(storage, value);
+        return await getDownloadURL(fileRef);
       } catch (e) {
-        console.error("Error generating signed url for", path, e);
+        console.error("Error generating url for", value, e);
         return value;
       }
     };
@@ -69,31 +76,22 @@ export const getSiteContent = createServerFn({ method: "GET" }).handler(async ()
       : { hero_image_url: "", tour_video_url: "" };
 
     if (settings) {
-      settings.hero_image_url = await resolve(settings.hero_image_url);
-      settings.tour_video_url = await resolve(settings.tour_video_url);
+      settings.hero_image_url = await resolveUrl(settings.hero_image_url);
+      settings.tour_video_url = await resolveUrl(settings.tour_video_url);
     }
 
     return { settings: settings ?? null, salas: salas ?? [], rawMedia };
   } catch (e) {
-    console.error("getSiteContent failed (Firebase Admin may not be configured):", e);
+    console.error("getSiteContent failed:", e);
     return { settings: null, salas: [], rawMedia: { hero_image_url: "", tour_video_url: "" } };
   }
-});
+}
 
-type SettingsInput = Partial<SiteSettings>;
-
-export const updateSiteSettings = createServerFn({ method: "POST" })
-  .validator((data: SettingsInput) => data)
-  .handler(async ({ data }) => {
-    const { requireFirebaseAuth } = await import("@/lib/auth-middleware");
-    const getAdmin = (await import("@/lib/firebase-admin")).default;
-    const { adminDb } = await getAdmin();
-    await adminDb.collection("site_settings").doc("main").set(
-      { ...data, updated_at: new Date().toISOString() },
-      { merge: true }
-    );
-    return { ok: true };
-  });
+export async function updateSiteSettings({ data }: { data: Partial<SiteSettings> }) {
+  if (!auth.currentUser) throw new Error("Unauthorized");
+  await setDoc(doc(db, "site_settings", "main"), { ...data, updated_at: new Date().toISOString() }, { merge: true });
+  return { ok: true };
+}
 
 type SalaInput = {
   id: string;
@@ -106,22 +104,19 @@ type SalaInput = {
   whatsapp: string | null;
 };
 
-export const updateSala = createServerFn({ method: "POST" })
-  .validator((data: SalaInput) => data)
-  .handler(async ({ data }) => {
-    const getAdmin = (await import("@/lib/firebase-admin")).default;
-    const { adminDb } = await getAdmin();
-    const { id, ...fields } = data;
-    await adminDb.collection("salas").doc(id).set(
-      { ...fields, updated_at: new Date().toISOString() },
-      { merge: true }
-    );
-    return { ok: true };
-  });
+export async function updateSala({ data }: { data: SalaInput }) {
+  if (!auth.currentUser) throw new Error("Unauthorized");
+  const { id, ...fields } = data;
+  await setDoc(doc(db, "salas", id), { ...fields, updated_at: new Date().toISOString() }, { merge: true });
+  return { ok: true };
+}
 
-export const getIsAdmin = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const getAdmin = (await import("@/lib/firebase-admin")).default;
-  const { adminDb } = await getAdmin();
-  const adminDoc = await adminDb.collection("admins").doc((context as any).userId).get();
-  return { isAdmin: adminDoc.exists };
-});
+export async function getIsAdmin() {
+  if (!auth.currentUser) return { isAdmin: false };
+  try {
+    const adminDoc = await getDoc(doc(db, "admins", auth.currentUser.uid));
+    return { isAdmin: adminDoc.exists() };
+  } catch {
+    return { isAdmin: false };
+  }
+}
