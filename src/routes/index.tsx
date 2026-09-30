@@ -103,7 +103,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const data = Route.useLoaderData();
-  const s = { ...fallback, ...(data.settings ?? {}) };
+  const s = { ...fallback, ...data.settings };
   const salas: Sala[] = data.salas ?? [];
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -136,7 +136,7 @@ function Index() {
           onEnded={(e) => {
             const vid = e.currentTarget;
             vid.currentTime = 0;
-            vid.play();
+            void vid.play();
             // Using a slight timeout before fading in ensures the seek operation is complete
             // and frame is rendered, avoiding a flicker of the end frame.
             setTimeout(() => setFading(false), 50);
@@ -300,6 +300,7 @@ function Index() {
               preload="metadata"
               className="mx-auto aspect-[9/16] w-full max-w-[32rem] bg-charcoal/5 object-cover shadow-2xl shadow-charcoal/10 md:aspect-[4/5] lg:max-w-none"
             >
+              <track kind="captions" />
               Seu navegador não suporta vídeo HTML5.
             </video>
           </div>
@@ -508,6 +509,7 @@ function Index() {
             
             <div className="mt-10 w-full max-w-md aspect-[4/3] sm:aspect-[16/7] rounded border border-sand/10 overflow-hidden relative grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
               <iframe
+                title="Mapa de localização da Galeria Mosantt"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
