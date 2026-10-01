@@ -162,6 +162,11 @@
   .font-serif {
     font-family: var(--font-serif);
   }
+
+  video::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    -webkit-appearance: none;
+  }
 }
 
 @keyframes hero-zoom {

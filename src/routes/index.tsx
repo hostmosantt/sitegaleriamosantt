@@ -86,6 +86,9 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [
+      { rel: "preload", as: "image", href: "/assets/mosantt-hero.webp" }
+    ],
   }),
   loader: () => getSiteContent(),
   component: Index,
@@ -119,7 +122,7 @@ function Index() {
           muted
           playsInline
           poster={s.hero_image_url}
-          className="absolute inset-0 w-full h-full object-cover object-center will-change-transform bg-charcoal"
+          className="absolute inset-0 w-full h-full object-cover object-center will-change-transform bg-charcoal pointer-events-none"
           initial={{ scale: 1.12 }}
           animate={{ scale: 1 }}
           transition={{ scale: { duration: 2.4, ease: [0.22, 1, 0.36, 1] } }}
@@ -246,7 +249,7 @@ function Index() {
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
           {/* Símbolo */}
           <div className="mx-auto mb-8 flex justify-center">
-            <img src="/assets/favicon.png" alt="Mosantt" className="h-12 md:h-14 w-auto drop-shadow-sm" />
+            <img src="/assets/favicon.png" alt="Mosantt" loading="lazy" className="h-12 md:h-14 w-auto drop-shadow-sm" />
           </div>
 
           {/* Header */}
@@ -556,6 +559,7 @@ function Index() {
             <img
               src="/assets/favicon.png"
               alt="Mosantt"
+              loading="lazy"
               className="h-10 w-auto hover:scale-105 transition-transform"
             />
           </a>
